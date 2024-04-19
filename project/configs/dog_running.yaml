@@ -1,0 +1,40 @@
+pretrained_model_path: "./checkpoints/stable-diffusion-v1-4"
+output_dir: "./outputs/dog_running_24_3"
+
+train_data:
+  video_path: "data/dog_running_1.mp4"
+  prompt: "a black and white puppy is running on the floor"
+  n_sample_frames: 32
+  width: 200
+  height: 200
+  sample_start_idx: 0
+  sample_frame_rate: 1
+
+validation_data:
+  prompts:
+    - "a cub is running on the floor"
+    - "a dog is running near the sofa in drawing room"
+    - "a horse is running in the playground"
+  video_length: 32
+  width: 200
+  height: 200
+  num_inference_steps: 50
+  guidance_scale: 15
+  use_inv_latent: True
+  num_inv_steps: 50
+
+learning_rate: 3e-5
+train_batch_size: 1
+max_train_steps: 500
+checkpointing_steps: 1000
+validation_steps: 100
+trainable_modules:
+  - "attn1.to_q"
+  - "attn2.to_q"
+  - "attn_temp"
+
+seed: 33
+mixed_precision: fp16
+use_8bit_adam: False
+gradient_checkpointing: True
+enable_xformers_memory_efficient_attention: True

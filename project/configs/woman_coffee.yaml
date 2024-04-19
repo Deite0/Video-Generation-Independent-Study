@@ -1,0 +1,41 @@
+pretrained_model_path: "./checkpoints/stable-diffusion-v1-4"
+output_dir: "./outputs/woman_coffe.133"
+
+train_data:
+  video_path: "data/5.mp4"
+  prompt: "a woman in glasses holding a coffee cup and looking at her phone while sitting at a table"
+  n_sample_frames: 32
+  width: 200
+  height: 200
+  sample_start_idx: 0
+  sample_frame_rate: 5
+
+validation_data:
+  prompts:
+    - "a woman in glasses holding a coffee cup and looking at her phone while sitting in a coffee shop"
+    - "a woman holding a cup of coffee and looking at her phone while sitting at a table"
+    - "woman drinking coffee and using smartphone in coffee shop with bookshelves in background"
+    - "woman drinking coffee in coffee shop while looking at her phone in front of her"
+  video_length: 32
+  width: 200
+  height: 200
+  num_inference_steps: 50
+  guidance_scale: 12.5
+  use_inv_latent: True
+  num_inv_steps: 50
+
+learning_rate: 3e-5
+train_batch_size: 1
+max_train_steps: 1000
+checkpointing_steps: 500
+validation_steps: 300
+trainable_modules:
+  - "attn1.to_q"
+  - "attn2.to_q"
+  - "attn_temp"
+
+seed: 33
+mixed_precision: fp16
+use_8bit_adam: False
+gradient_checkpointing: True
+enable_xformers_memory_efficient_attention: True
