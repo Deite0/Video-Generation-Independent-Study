@@ -1,256 +1,117 @@
-# Tune-A-Video
-
-This repository is the official implementation of [Tune-A-Video](https://arxiv.org/abs/2212.11565).
-
-**[Tune-A-Video: One-Shot Tuning of Image Diffusion Models for Text-to-Video Generation](https://arxiv.org/abs/2212.11565)**
-<br/>
-[Jay Zhangjie Wu](https://zhangjiewu.github.io/), 
-[Yixiao Ge](https://geyixiao.com/), 
-[Xintao Wang](https://xinntao.github.io/), 
-[Stan Weixian Lei](), 
-[Yuchao Gu](https://ycgu.site/), 
-[Yufei Shi](),
-[Wynne Hsu](https://www.comp.nus.edu.sg/~whsu/), 
-[Ying Shan](https://scholar.google.com/citations?user=4oXBp9UAAAAJ&hl=en), 
-[Xiaohu Qie](https://scholar.google.com/citations?user=mk-F69UAAAAJ&hl=en), 
-[Mike Zheng Shou](https://sites.google.com/view/showlab)
-<br/>
-
-[![Project Website](https://img.shields.io/badge/Project-Website-orange)](https://tuneavideo.github.io/)
-[![arXiv](https://img.shields.io/badge/arXiv-2212.11565-b31b1b.svg)](https://arxiv.org/abs/2212.11565)
-[![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/Tune-A-Video-library/Tune-A-Video-Training-UI)
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/showlab/Tune-A-Video/blob/main/notebooks/Tune-A-Video.ipynb)
-
+# Layered Neural Atlases for Consistent Video Editing
+### [Project Page](https://layered-neural-atlases.github.io/) | [Paper](https://arxiv.org/pdf/2109.11418.pdf) 
 
 <p align="center">
-<img src="https://tuneavideo.github.io/assets/teaser.gif" width="1080px"/>  
-<br>
-<em>Given a video-text pair as input, our method, Tune-A-Video, fine-tunes a pre-trained text-to-image diffusion model for text-to-video generation.</em>
+  <img width="100%" src="media/teaser_lucia.gif"/>
 </p>
 
-## News
-### 🚨 Announcing [LOVEU-TGVE](https://sites.google.com/view/loveucvpr23/track4): A CVPR competition for AI-based video editing! Submissions due Jun 5. Don't miss out! 🤩 
-- [02/22/2023] Improved consistency using DDIM inversion.
-- [02/08/2023] [Colab demo](https://colab.research.google.com/github/showlab/Tune-A-Video/blob/main/notebooks/Tune-A-Video.ipynb) released!
-- [02/03/2023] Pre-trained Tune-A-Video models are available on [Hugging Face Library](https://huggingface.co/Tune-A-Video-library)!
-- [01/28/2023] New Feature: tune a video on personalized [DreamBooth](https://dreambooth.github.io/) models.
-- [01/28/2023] Code released!
+This repository contains an implementation for the SIGGRAPH Asia 2021 paper <a href="https://arxiv.org/pdf/2109.11418.pdf">Layered Neural Atlases for Consistent Video Editing</a>.
 
-## Setup
+The paper introduces the first approach for neural video unwrapping using an end-to-end optimized interpretable and semantic atlas-based representation, which facilitates easy and intuitive editing in the atlas domain.
 
-### Requirements
+## Installation Requirements
+The code is compatible with Python 3.7 and PyTorch 1.6. 
 
-```shell
-pip install -r requirements.txt
+You can create an anaconda environment called `neural_atlases` with the required dependencies by running:
+```
+conda create --name neural_atlases python=3.7 
+conda activate neural_atlases 
+conda install pytorch=1.6.0 torchvision=0.7.0 cudatoolkit=10.1 matplotlib tensorboard scipy  scikit-image tqdm  opencv -c pytorch
+pip install imageio-ffmpeg gdown
+python -m pip install detectron2 -f   https://dl.fbaipublicfiles.com/detectron2/wheels/cu101/torch1.6/index.html
 ```
 
-Installing [xformers](https://github.com/facebookresearch/xformers) is highly recommended for more efficiency and speed on GPUs. 
-To enable xformers, set `enable_xformers_memory_efficient_attention=True` (default).
+## Data convention
+The code expects 3 folders for each video input, e.g. for a video of 50 frames named "blackswan":
+1. `data/blackswan`: A folder of video frames containing image files in the following convention: `blackswan/00000.jpg`,`blackswan/00001.jpg`,...,`blackswan/00049.jpg`  (as in the  [DAVIS](https://davischallenge.org/)  dataset).
+2. `data/blackswan_flow`: A folder with forward and backward optical flow files in the following convention: `blackswan_flow/00000.jpg_00001.jpg.npy`,`blackswan_flow/00001.jpg_00000.jpg`,...,`blackswan_flow/00049.jpg_00048.jpg.npy`.
+3. `data/blackswan_maskrcnn`: A folder with rough masks (created by [Mask-RCNN](https://arxiv.org/abs/1703.06870) or any other way) containing files in the following convention: `blackswan_maskrcnn/00000.jpg`,`blackswan_maskrcnn/00001.jpg`,...,`blackswan_maskrcnn/00049.jpg`
 
-
-set enable_xformers_memory_efficient_attention=True
-
-### Weights
-
-**[Stable Diffusion]** [Stable Diffusion](https://arxiv.org/abs/2112.10752) is a latent text-to-image diffusion model capable of generating photo-realistic images given any text input. The pre-trained Stable Diffusion models can be downloaded from Hugging Face (e.g., [Stable Diffusion v1-4](https://huggingface.co/CompVis/stable-diffusion-v1-4), [v2-1](https://huggingface.co/stabilityai/stable-diffusion-2-1)). You can also use fine-tuned Stable Diffusion models trained on different styles (e.g, [Modern Disney](https://huggingface.co/nitrosocke/mo-di-diffusion), [Anything V4.0](https://huggingface.co/andite/anything-v4.0), [Redshift](https://huggingface.co/nitrosocke/redshift-diffusion), etc.).
-
-**[DreamBooth]** [DreamBooth](https://dreambooth.github.io/) is a method to personalize text-to-image models like Stable Diffusion given just a few images (3~5 images) of a subject. Tuning a video on DreamBooth models allows personalized text-to-video generation of a specific subject. There are some public DreamBooth models available on [Hugging Face](https://huggingface.co/sd-dreambooth-library) (e.g., [mr-potato-head](https://huggingface.co/sd-dreambooth-library/mr-potato-head)). You can also train your own DreamBooth model following [this training example](https://github.com/huggingface/diffusers/tree/main/examples/dreambooth). 
-
-
-## Usage
-
-### Training
-
-To fine-tune the text-to-image diffusion models for text-to-video generation, run this command:
-
-```bash
-accelerate launch train_tuneavideo.py --config="configs/man-skiing.yaml"
-
-accelerate launch train_tuneavideo.py --config="configs/car-turn.yaml"
-
-accelerate launch train_tuneavideo.py --config="configs/rabbit-watermelon.yaml"
-
-
+For a few examples of DAVIS sequences run:
+```
+gdown https://drive.google.com/uc?id=1WipZR9LaANTNJh764ukznXXAANJ5TChe
+unzip data.zip
 ```
 
-Note: Tuning a 24-frame video usually takes `300~500` steps, about `10~15` minutes using one A100 GPU. 
-Reduce `n_sample_frames` if your GPU memory is limited.
 
-### Inference
 
-Once the training is done, run inference:
 
-```python
-from tuneavideo.pipelines.pipeline_tuneavideo import TuneAVideoPipeline
-from tuneavideo.models.unet import UNet3DConditionModel
-from tuneavideo.util import save_videos_grid
-import torch
-
-pretrained_model_path = "./checkpoints/stable-diffusion-v1-4"
-my_model_path = "./outputs/man-skiing"
-unet = UNet3DConditionModel.from_pretrained(my_model_path, subfolder='unet', torch_dtype=torch.float16).to('cuda')
-pipe = TuneAVideoPipeline.from_pretrained(pretrained_model_path, unet=unet, torch_dtype=torch.float16).to("cuda")
-pipe.enable_xformers_memory_efficient_attention()
-pipe.enable_vae_slicing()
-
-prompt = "spider man is skiing"
-ddim_inv_latent = torch.load(f"{my_model_path}/inv_latents/ddim_latent-500.pt").to(torch.float16)
-video = pipe(prompt, latents=ddim_inv_latent, video_length=24, height=512, width=512, num_inference_steps=50, guidance_scale=12.5).videos
-
-save_videos_grid(video, f"./{prompt}.gif")
+#### Masks extraction
+Given only the video frames folder `data/blackswan` it is possible to extract the [Mask-RCNN](https://arxiv.org/abs/1703.06870) masks (and create the required folder `data/blackswan_maskrcnn`) by running: 
+```
+python preprocess_mask_rcnn.py --vid-path data/blackswan --class_name bird
+```
+where --class_name determines the COCO class name of the sought foreground object. It is also possible to choose the first instance retrieved by Mask-RCNN by using `--class_name anything`. This is usefull for cases where Mask-RCNN gets correct masks with wrong classes as in the "libby" video:
+```
+python preprocess_mask_rcnn.py --vid-path data/libby --class_name anything
 ```
 
-## Results
+#### Optical flows extraction
+Furthermore, the optical flow folder can be extracted using [RAFT](https://arxiv.org/abs/2003.12039). 
+For linking RAFT into the current project run:
+```
+git submodule update --init
+cd thirdparty/RAFT/
+./download_models.sh
+cd ../..
+```
 
-### Pretrained T2I (Stable Diffusion)
-<table class="center">
-<tr>
-  <td style="text-align:center;"><b>Input Video</b></td>
-  <td style="text-align:center;" colspan="3"><b>Output Video</b></td>
-</tr>
-<tr>
-  <td><img src="https://tuneavideo.github.io/assets/data/man-skiing.gif"></td>
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/man-skiing/spiderman-beach.gif"></td>
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/man-skiing/wonder-woman.gif"></td>              
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/man-skiing/pink-sunset.gif"></td>
-</tr>
-<tr>
-  <td width=25% style="text-align:center;color:gray;">"A man is skiing"</td>
-  <td width=25% style="text-align:center;">"Spider Man is skiing on the beach, cartoon style”</td>
-  <td width=25% style="text-align:center;">"Wonder Woman, wearing a cowboy hat, is skiing"</td>
-  <td width=25% style="text-align:center;">"A man, wearing pink clothes, is skiing at sunset"</td>
-</tr>
+For extracting the optical flows (and creating the required folder `data/blackswan_flow`) run: 
+```
+python preprocess_optical_flow.py --vid-path data/blackswan --max_long_edge 768
+```
 
-<tr>
-  <td><img src="https://tuneavideo.github.io/assets/data/rabbit-watermelon.gif"></td>
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/rabbit-watermelon/rabbit.gif"></td>
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/rabbit-watermelon/cat.gif"></td>              
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/rabbit-watermelon/puppy.gif"></td>
-</tr>
-<tr>
-  <td width=25% style="text-align:center;color:gray;">"A rabbit is eating a watermelon on the table"</td>
-  <td width=25% style="text-align:center;">"A rabbit is <del>eating a watermelon</del> on the table"</td>
-  <td width=25% style="text-align:center;">"A cat with sunglasses is eating a watermelon on the beach"</td>
-  <td width=25% style="text-align:center;">"A puppy is eating a cheeseburger on the table, comic style"</td>
-</tr>
+## Pretrained models
+For downloading a sample set of our pretrained models together with sample edits run:
+```
+gdown https://drive.google.com/uc?id=10voSCdMGM5HTIYfT0bPW029W9y6Xij4D
+unzip pretrained_models.zip
+```
+Additional pre-trained atlases are provided [here](https://www.dropbox.com/s/oiyhbiqdws2p6r1/nla_share.zip?dl=0 ).
 
-<tr>
-  <td><img src="https://tuneavideo.github.io/assets/data/car-turn.gif"></td>
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/car-turn/porsche-beach.gif"></td>
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/car-turn/car-cartoon.gif"></td>              
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/car-turn/car-snow.gif"></td>
-</tr>
-<tr>
-  <td width=25% style="text-align:center;color:gray;">"A jeep car is moving on the road"</td>
-  <td width=25% style="text-align:center;">"A Porsche car is moving on the beach"</td>
-  <td width=25% style="text-align:center;">"A car is moving on the road, cartoon style"</td>
-  <td width=25% style="text-align:center;">"A car is moving on the snow"</td>
-</tr>
+## Training
+For training a model on a video, run: 
+```
+python train.py config/config.json
+```
+where the video frames folder is determined by the config parameter `"data_folder"`.
+Note that in order to reduce the training time it is possible to reduce the evaluation frequency controlled by the parameter `"evaluate_every"` (e.g. by changing it to 10000).
+The other configurable parameters are documented inside the file `train.py`. 
 
-<tr>
-  <td><img src="https://tuneavideo.github.io/assets/data/man-basketball.gif"></td>
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/man-basketball/bond.gif"></td>
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/man-basketball/astronaut.gif"></td>              
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/man-basketball/lego.gif"></td>
-</tr>
-<tr>
-  <td width=25% style="text-align:center;color:gray;">"A man is dribbling a basketball"</td>
-  <td width=25% style="text-align:center;">"James Bond is dribbling a basketball on the beach"</td>
-  <td width=25% style="text-align:center;">"An astronaut is dribbling a basketball, cartoon style"</td>
-  <td width=25% style="text-align:center;">"A lego man in a black suit is dribbling a basketball"</td>
-</tr>
-</table>
+### Evaluation
+During training, the model is evaluated. For running only evaluation on a trained folder run:
+```
+python only_evaluate.py --trained_model_folder=pretrained_models/checkpoints/blackswan --video_name=blackswan --data_folder=data --output_folder=evaluation_outputs
+```
+where `trained_model_folder` is the path to a folder that contains the `config.json` and `checkpoint` files of the trained model. 
+## Editing
+To apply editing, run the script `only_edit.py`. Examples for the supplied pretrained models for "blackswan" and "boat":
+```
+python only_edit.py --trained_model_folder=pretrained_models/checkpoints/blackswan --video_name=blackswan --data_folder=data --output_folder=editing_outputs --edit_foreground_path=pretrained_models/edit_inputs/blackswan/edit_blackswan_foreground.png --edit_background_path=pretrained_models/edit_inputs/blackswan/edit_blackswan_background.png
+```
+```
+python only_edit.py --trained_model_folder=pretrained_models/checkpoints/boat --video_name=boat --data_folder=data --output_folder=editing_outputs --edit_foreground_path=pretrained_models/edit_inputs/boat/edit_boat_foreground.png --edit_background_path=pretrained_models/edit_inputs/boat/edit_boat_backgound.png
+```
+Where `edit_foreground_path` and `edit_background_path` specify the paths to 1000x1000 images of the RGBA atlas edits.
 
-### Pretrained T2I (personalized DreamBooth)
+For applying an edit that was done on a frame (e.g. for the pretrained "libby"):
 
-<a href="https://huggingface.co/andite/anything-v4.0"><img src="https://tuneavideo.github.io/assets/results/tuneavideo/anything-v4/anything-v4.png" width="240px"/></a>
-
-<table class="center">
-<tr>
-  <td style="text-align:center;"><b>Input Video</b></td>
-  <td style="text-align:center;" colspan="3"><b>Output Video</b></td>
-</tr>
-<tr>
-  <td><img src="https://tuneavideo.github.io/assets/data/bear-guitar.gif"></td>
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/anything-v4/bear-guitar/1girl-streets.gif"></td>      
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/anything-v4/bear-guitar/1boy-indoor.gif"></td>
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/anything-v4/bear-guitar/1girl-beach.gif"></td>
-</tr>
-<tr>
-  <td width=25% style="text-align:center;color:gray;">"A bear is playing guitar"</td>
-  <td width=25% style="text-align:center;">"1girl is playing guitar, white hair, medium hair, cat ears, closed eyes, cute, scarf, jacket, outdoors, streets"</td>
-  <td width=25% style="text-align:center;">"1boy is playing guitar, bishounen, casual, indoors, sitting, coffee shop, bokeh"</td>
-  <td width=25% style="text-align:center;">"1girl is playing guitar, red hair, long hair, beautiful eyes, looking at viewer, cute, dress, beach, sea"</td>
-</tr>
-</table>
-
-
-<a href="https://huggingface.co/nitrosocke/mo-di-diffusion"><img src="https://tuneavideo.github.io/assets/results/tuneavideo/modern-disney/modern-disney.png" width="240px"/></a> 
-
-<table class="center">
-<tr>
-  <td style="text-align:center;"><b>Input Video</b></td>
-  <td style="text-align:center;" colspan="3"><b>Output Video</b></td>
-</tr>
-<tr>
-  <td><img src="https://tuneavideo.github.io/assets/data/bear-guitar.gif"></td>
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/modern-disney/bear-guitar/rabbit.gif"></td>      
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/modern-disney/bear-guitar/prince.gif"></td>
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/modern-disney/bear-guitar/princess.gif"></td>
-</tr>
-<tr>
-  <td width=25% style="text-align:center;color:gray;">"A bear is playing guitar"</td>
-  <td width=25% style="text-align:center;">"A rabbit is playing guitar, modern disney style"</td>
-  <td width=25% style="text-align:center;">"A handsome prince is playing guitar, modern disney style"</td>
-  <td width=25% style="text-align:center;">"A magic princess with sunglasses is playing guitar on the stage, modern disney style"</td>
-</tr>
-</table>
-
-<a href="https://huggingface.co/sd-dreambooth-library/mr-potato-head"><img src="https://tuneavideo.github.io/assets/results/tuneavideo/mr-potato-head/mr-potato-head.png" width="240px"/></a>
-
-<table class="center">
-<tr>
-  <td style="text-align:center;"><b>Input Video</b></td>
-  <td style="text-align:center;" colspan="3"><b>Output Video</b></td>
-</tr>
-<tr>
-  <td><img src="https://tuneavideo.github.io/assets/data/bear-guitar.gif"></td>
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/mr-potato-head/bear-guitar/lego-snow.gif"></td>
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/mr-potato-head/bear-guitar/sunglasses-beach.gif"></td>      
-  <td><img src="https://tuneavideo.github.io/assets/results/tuneavideo/mr-potato-head/bear-guitar/van-gogh.gif"></td>
-</tr>
-<tr>
-  <td width=25% style="text-align:center;color:gray;">"A bear is playing guitar"</td>
-  <td width=25% style="text-align:center;">"Mr Potato Head, made of lego, is playing guitar on the snow"</td>
-  <td width=25% style="text-align:center;">"Mr Potato Head, wearing sunglasses, is playing guitar on the beach"</td>
-  <td width=25% style="text-align:center;">"Mr Potato Head is playing guitar in the starry night, Van Gogh style"</td>
-</tr>
-</table>
-
+```
+python only_edit.py --trained_model_folder=pretrained_models/checkpoints/libby --video_name=libby --data_folder=data --output_folder=editing_outputs  --use_edit_frame --edit_frame_index=7 --edit_frame_path=pretrained_models/edit_inputs/libby/edit_frame_.png
+```
 
 ## Citation
-If you make use of our work, please cite our paper.
-```bibtex
-@inproceedings{wu2023tune,
-  title={Tune-a-video: One-shot tuning of image diffusion models for text-to-video generation},
-  author={Wu, Jay Zhangjie and Ge, Yixiao and Wang, Xintao and Lei, Stan Weixian and Gu, Yuchao and Shi, Yufei and Hsu, Wynne and Shan, Ying and Qie, Xiaohu and Shou, Mike Zheng},
-  booktitle={Proceedings of the IEEE/CVF International Conference on Computer Vision},
-  pages={7623--7633},
-  year={2023}
+If you find our work useful in your research, please consider citing:
+```
+@article{kasten2021layered,
+  title={Layered neural atlases for consistent video editing},
+  author={Kasten, Yoni and Ofri, Dolev and Wang, Oliver and Dekel, Tali},
+  journal={ACM Transactions on Graphics (TOG)},
+  volume={40},
+  number={6},
+  pages={1--12},
+  year={2021},
+  publisher={ACM New York, NY, USA}
 }
 ```
-
-## Shoutouts
-
-- This code builds on [diffusers](https://github.com/huggingface/diffusers). Thanks for open-sourcing!
-- Thanks [hysts](https://github.com/hysts) for the awesome [gradio demo](https://huggingface.co/spaces/Tune-A-Video-library/Tune-A-Video-Training-UI).
-
-\
-go to the webui directory
-source ./venv/bin/activate
-cd repositories
-git clone https://github.com/facebookresearch/xformers.git
-cd xformers
-git submodule update --init --recursive
-pip install -r requirements.txt
-pip install -e .
+# Video-Generation-Independent-Study
