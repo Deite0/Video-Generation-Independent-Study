@@ -1,0 +1,56 @@
+keyframe:
+- bbox_ratios:
+  - 0.01
+  - 0.03
+  - 0.17
+  - 0.18
+  frame: 0
+  prompt: A white cat walking on the grass
+- bbox_ratios:
+  - 0.20
+  - 0.21
+  - 0.42
+  - 0.41
+  frame: 9
+  prompt: A white cat walking on the grass
+- bbox_ratios:
+  - 0.45
+  - 0.43
+  - 0.69
+  - 0.65
+  frame: 18
+  prompt: A white cat walking on the grass
+- bbox_ratios:
+  - 0.72
+  - 0.68
+  - 0.99
+  - 0.93
+  frame: 30
+  prompt: A white cat walking on the grass
+- bbox_ratios:
+  - 0.72
+  - 0.68
+  - 0.99
+  - 0.93
+  frame: 48
+  prompt: A white cat walking on the grass
+num_inference_steps: 100
+trailblazer:
+  num_dd_spatial_steps: 5
+  num_dd_temporal_steps: 5
+  spatial_strengthen_scale: 0.1
+  spatial_weaken_scale: 0.001
+  temp_strengthen_scale: 0.1
+  temp_weaken_scale: 0.001
+  trailing_length: 11
+text2vidzero:
+  motion_field_strength_x: -8
+  motion_field_strength_y: 0
+seed: 8
+num_frames : 48
+width: 256
+height: 256
+token_inds:
+- 1
+- 2
+- 3
