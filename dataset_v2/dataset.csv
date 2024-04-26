@@ -1,0 +1,26 @@
+,train_inputs,validation_inputs,test_inputs,,file_name,train_inputs,validation_inputs,test_inputs
+guitar-violin.yaml,45,4,0,,black_cat.yaml,82,3,0
+hike.yaml,36,4,0,,bus.yaml,62,2,0
+hockey.yaml,38,3,0,,car.yaml,64,2,0
+kid-football.yaml,44,4,0,,cat2.yaml,35,3,0
+kite-surf.yaml,41,3,0,,duck.yaml,74,3,0
+lab-coat.yaml,40,2,0,,horse.yaml,48,3,0
+libby.yaml,37,3,0,,parrot.yaml,50,3,0
+longboard.yaml,41,3,0,,rabbit.yaml,62,3,0
+bear.yaml,36,3,0,,skateboard.yaml,61,3,0
+blackswan.yaml,41,3,0,,,,,
+boat.yaml,36,3,0,,,,,
+camel.yaml,37,3,0,,,,,
+car-roundabout.yaml,46,2,0,,,,,
+car-turn.yaml,40,4,0,,,,,
+cows.yaml,36,3,0,,,,,
+dog-agility.yaml,43,3,0,,,,,
+dog.yaml,35,3,0,,,,,
+drift-turn.yaml,42,3,0,,,,,
+elephant.yaml,40,3,0,,,,,
+flamingo.yaml,40,2,0,,,,,
+golf.yaml,36,2,0,,,,,
+,,,,,train,validation_prompts,test_prompts,
+,,,,object change,21,63,21,
+,,,,motion and background,11,29,11,
+,,,,zoom,8,16,8,
